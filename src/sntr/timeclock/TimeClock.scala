@@ -8,54 +8,76 @@ import scalafx.scene.Scene
 import scalafx.scene.control._
 import scalafx.scene.layout._
 import scala.collection.mutable.ListBuffer
+import javafx.scene.text.Text
+import javafx.geometry.Pos
+import javafx.scene.layout.RowConstraints
+import scalafx.geometry.VPos
+import scalafx.geometry.HPos
+import scalafx.geometry.Insets
 
 object TimeClock extends JFXApp {
-	
+
+	val rem = Math.rint(new Text("").getLayoutBounds().getHeight())
+	//println(rem) -> 24
+
 	val lastEntries = new ListBuffer[String]
-	
+
 	lastEntries += "Test"
-	
-	stage = new PrimaryStage{
+
+	stage = new PrimaryStage {
 		title = "Time Clock"
-		scene = new Scene(600, 400) {
+		scene = new Scene(25 * rem, 15 * rem) {
+			
 			root = new BorderPane {
+				
+				padding = Insets.apply(3, 3, 3, 3)
+				
 				left = new VBox {
 					val labels = new ListBuffer[Label]
-					for(item <- lastEntries) labels += new Label(item)
+					for (item <- lastEntries) labels += new Label(item)
 					content = labels
-					
+
 				}
-				right = new HBox {
-					content = List(
-						new VBox {
-							style = "-fx-background-color: #336699;"
-							content = List(
-								new Button {
-									maxWidth = 100
-									minHeight = 50
-									text = "Come"
-									
-								},
-								new Button {
-									maxWidth = 100									
-									text = "Forgot"
-								}
-							)
-						},
-						new VBox {
-							content = List(
-								new Button {
-									maxWidth = 100
-									text = "Go"
-									
-								},
-								new Button {
-									maxWidth = 100									
-									text = "Forgot"
-								}
-							)
-						}
-					)
+				right = new GridPane {
+					
+					hgap = 3
+					vgap = 3
+					
+					val comeButton = new Button {
+						maxWidth = Double.MaxValue
+						maxHeight = Double.MaxValue
+						text = "Come"
+					}
+					GridPane.setConstraints(comeButton, 0, 0, 1, 1, HPos.CENTER, VPos.CENTER, Priority.SOMETIMES, Priority.ALWAYS)
+					
+					val forgotComeButton = new Button {
+						maxWidth = Double.MaxValue
+						maxHeight = Double.MaxValue
+						text = "Forgot"
+					}
+					GridPane.setConstraints(forgotComeButton, 0, 1, 1, 1, HPos.CENTER, VPos.BOTTOM)
+					
+
+					addColumn(0, comeButton, forgotComeButton)
+					
+					val goButton = new Button {
+						maxWidth = Double.MaxValue
+						maxHeight = Double.MaxValue
+						text = "Go"
+					}
+					GridPane.setConstraints(comeButton, 0, 0, 1, 1, HPos.CENTER, VPos.CENTER, Priority.SOMETIMES, Priority.ALWAYS)
+					
+					val forgotGoButton = new Button {
+						maxWidth = Double.MaxValue
+						maxHeight = Double.MaxValue
+						text = "Forgot"
+					}
+					GridPane.setConstraints(forgotComeButton, 0, 1, 1, 1, HPos.CENTER, VPos.BOTTOM)
+					
+
+					addColumn(1, goButton, forgotGoButton)
+					
+
 				}
 			}
 		}
