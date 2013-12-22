@@ -12,6 +12,8 @@ A simple time clock app with scalaFX.
 - Forgot for come/go
 - Data storage in a file
 - Displaying of the last 10 days
+  - 1 Come/Go per row
+  - colored per day in a 2-day cycle
 - App resizes in windows desktop DPI scale
 
 ## Additional Resources
