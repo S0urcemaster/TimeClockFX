@@ -1,8 +1,8 @@
 # TimeClockFX
 
-> A simple time clock app with scalaFX.
+A simple time clock app with scalaFX.
 
-> (Created 22.12.13)
+(Created 22.12.13)  
 (Update 22.12.13)
 
 ## Additional Resources
