@@ -3,6 +3,9 @@
 A simple time clock app with scalaFX.
 
 ## Timeline
+- Alpha Buglist 03.01.14
+  - Adding to List is reverse
+  
 - Updated 22.12.13
 - Created 22.12.13
 

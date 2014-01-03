@@ -23,13 +23,18 @@ import json._
 import java.util.Calendar
 import java.io.FileWriter
 import java.text.SimpleDateFormat
+import java.io.File
+import scalafx.event.EventHandler
+import scala.collection.Iterator
+import javafx.scene.layout.Priority
+import scalafx.stage.Stage
+import scalafx.stage.Modality
 
+class DataSet {
 
-class DataSet() {
-	
 	var come: Date = _
 	var go: Option[Date] = _
-	
+
 	override def toString: String = {
 		val comeDf = DateFormat.getDateTimeInstance()
 		val sCome = comeDf.format(come)
@@ -40,150 +45,362 @@ class DataSet() {
 		}
 		sCome + " - " + sGo
 	}
-	
+
+}
+
+//object Dialog {
+//	
+//	val stage = new Stage {
+//		title = "Type Time"
+//		initModality(Modality.WINDOW_MODAL)
+//		scene = new Scene(15 * Constants.rem, 8 * Constants.rem) {
+//			root = new BorderPane {
+//				top = new Label("Type in time:")
+//				center = new TextField {
+//					text = "hh:mm"
+//				}
+//				bottom = new HBox {
+//					content = List(
+//						new Button("Cancel") {
+//							onMouseClicked = clicked
+//						}
+//					)
+//				}
+//			}
+//		}
+//	}
+//		dialogStage.initModality(Modality.WINDOW_MODAL);
+//		dialogStage.setScene(new Scene(VBoxBuilder.create().
+//			children(new Text("Hi"), new Button("Ok.")).
+//			alignment(Pos.CENTER).padding(new Insets(5)).build()));
+//		dialogStage.show();
+//		)
+//	}
+//	
+//}
+
+object Constants {
+	val rem = Math.rint(new Text("").getLayoutBounds.getHeight)
+	//println(rem) -> 24
 }
 
 object TimeClock extends JFXApp {
 	
+	val forgotTextField = new TextField {
+		text = "hh:mm"
+	}
+	
+	val dialog = new Stage {
+		title = "Type Time"
+		initModality(Modality.WINDOW_MODAL)
+		scene = new Scene(15 * Constants.rem, 8 * Constants.rem) {
+			root = new BorderPane {
+				top = new Label("Type in time:")
+				center = forgotTextField
+				bottom = new HBox {
+					content = List(
+						new Button("Cancel") {
+							onMouseClicked = clicked("dCancel")
+						},
+						new Button("Ok") {
+							onMouseClicked = clicked("dOk")
+						}
+					)
+				}
+			}
+		}
+	}
+	
+	val WeekDays = List(
+
+		"", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+
 	def getCurrentYear: Int = {
 		val cal = Calendar.getInstance
 		cal.setTime(new Date)
 		cal.get(Calendar.YEAR)
 	}
-	
+
 	def getCurrentMonth: Int = {
 		val cal = Calendar.getInstance
 		cal.setTime(new Date)
 		cal.get(Calendar.MONTH)
 	}
-	
+
 	def generateFilename(): String = {
-		
+
 		val year = getCurrentYear.toString
-		val month = getCurrentMonth.toString
-		year +month +".times"
-		
+		val month = getCurrentMonth + 1
+		year + String.format("%02d", Int.box(month)) + ".times"
+
 	}
-	
+
 	def dataSet2Line(dataSet: DataSet): String = {
-		
-		val come = dataSet.come.getDate() +"." +dataSet.come.getHours() +":" +dataSet.come.getMinutes()
-		val go = dataSet.go.get.getDate() +"." +dataSet.go.get.getHours() +":" +dataSet.go.get.getMinutes()
-		come +" - " +go
-		
+		val cal = Calendar.getInstance()
+		cal.setTime(dataSet.come)
+		val come = String.format("%02d", Int.box(cal.get(Calendar.DAY_OF_MONTH))) + "." +
+			String.format("%02d", Int.box(cal.get(Calendar.HOUR_OF_DAY))) + ":" +
+			String.format("%02d", Int.box(cal.get(Calendar.MINUTE)))
+		def go: String = {
+			if (!dataSet.go.isEmpty) {
+				cal.setTime(dataSet.go.get)
+				return String.format("%02d", Int.box(cal.get(Calendar.DAY_OF_MONTH))) + "." +
+					String.format("%02d", Int.box(cal.get(Calendar.HOUR_OF_DAY))) + ":" +
+					String.format("%02d", Int.box(cal.get(Calendar.MINUTE)))
+			}
+			""
+		}
+
+		come + " - " + go
+
 	}
-	
+
 	def line2DataSet(line: String, month: Int, year: Int): DataSet = {
-		
+
 		val cal = Calendar.getInstance
-		
+
 		val split = line.split("""\.|:|( - )""")
-		
+
 		cal.set(year, month, Integer.parseInt(split(0)), Integer.parseInt(split(1)), Integer.parseInt(split(2)))
-		
-		val dataSet = new DataSet
+
+		val dataSet = new DataSet { come = cal.getTime; go = None }
+
 		dataSet.come = cal.getTime
-		
-		cal.set(year, month, Integer.parseInt(split(3)), Integer.parseInt(split(4)), Integer.parseInt(split(5)))
-		
-		dataSet.go = Option(cal.getTime)
-		
+
+		if (split.length > 3) {
+			cal.set(year, month, Integer.parseInt(split(3)), Integer.parseInt(split(4)), Integer.parseInt(split(5)))
+			dataSet.go = Some(cal.getTime)
+		} else dataSet.go = None
+
 		dataSet
 	}
-	
+
 	def writeToFile(p: String, s: String): Unit = {
-	    val pw = new java.io.PrintWriter(new java.io.File(p))
-	    try pw.write(s) finally pw.close()
+		val pw = new java.io.PrintWriter(new java.io.File(p))
+		try pw.write(s) finally pw.close()
 	}
-	
+
 	def serialize(list: List[DataSet]) {
-		
-		val fw = new FileWriter(generateFilename, true)
+
+		val fw = new FileWriter(generateFilename, false)
 		try {
 			list.foreach(dataSet => {
-				fw.write(dataSet2Line(dataSet) +"\n")
+				fw.write(dataSet2Line(dataSet) + "\n")
 			})
-		}
-		finally fw.close()
-		
+		} finally fw.close()
+
 	}
-	
+
 	def unserialize(): List[DataSet] = {
-		val source = Source.fromFile(generateFilename)
-		
-		List.fromIterator(for(line <- source.getLines) yield line2DataSet(line, getCurrentMonth, getCurrentYear))
-		
+
+		val filename = generateFilename
+		if (!new File(filename).exists) {
+			serialize(List[DataSet]())
+		}
+		val source = Source.fromFile(filename)
+
+		(for (line <- source.getLines) yield line2DataSet(line, getCurrentMonth, getCurrentYear)).toList
+
 	}
 	
-	val rem = Math.rint(new Text("").getLayoutBounds().getHeight())
-	//println(rem) -> 24
-
-	val data = TimeClock.unserialize
 	
-	val labels = for (dataSet <- data) yield {
-		val cal = Calendar.getInstance
-		cal.setTime(dataSet.come)
-		val from = cal.get(Calendar.DAY_OF_MONTH) +". " +cal.get(Calendar.MONTH) +". " +
-			cal.get(Calendar.YEAR) +" - " +cal.get(Calendar.HOUR) +":" +cal.get(Calendar.MINUTE) +" => "
-		cal.setTime(dataSet.go.get)
-		val to = cal.get(Calendar.DAY_OF_MONTH) +". " +cal.get(Calendar.MONTH) +". " +
-			cal.get(Calendar.YEAR) +" - " +cal.get(Calendar.HOUR) +":" +cal.get(Calendar.MINUTE)
-		new Label(from +to)
+	def clicked(id: String) {
+
+		id match {
+
+			case "come" => {
+
+				val ds = new DataSet { come = new Date; go = None }
+				data = ds :: data
+				serialize(data)
+
+				dayPanes = makeDayPanes
+				dayPanesBox.content = dayPanes
+				toggleButtons
+
+			}
+			case "go" => {
+				data(0).go = Some(new Date)
+				serialize(data)
+				dayPanes = makeDayPanes
+				dayPanesBox.content = dayPanes
+				toggleButtons
+			}
+			case "forgotCome" => {
+				dialog.show
+			}
+			case "forgotGo" => {
+				dialog.show
+			}
+			case "dOk" => {
+				dialog.hide
+				val cal = Calendar.getInstance
+				if (data(0).go.isEmpty) {
+					cal.setTime(data(0).come)
+					cal.set(Calendar.HOUR, Integer.parseInt(forgotTextField.text.toString.substring(1)))
+					cal.set(Calendar.MINUTE, Integer.parseInt(forgotTextField.text.toString.substring(3, 4)))
+					data(0).go = Some(cal.getTime())
+					serialize(data)
+					dayPanes = makeDayPanes
+					dayPanesBox.content = dayPanes
+					toggleButtons
+				}
+				else {
+					//forgotCome braucht ein Datum
+				}
+			}
+			case "dCancel" => {
+				dialog.hide
+				
+			}
+
+		}
+
 	}
 
-	
+	var data = TimeClock.unserialize
+
+	//for ((k, v) <- days) {
+	//	val cal = Calendar.getInstance
+	//	cal.setTime(v(0).come)
+	//	println(k, WeekDays(cal.get(Calendar.DAY_OF_WEEK)), v)
+	//}
+
+	val df = new SimpleDateFormat("dd.MM.yyyy")
+
+	def makeDayLabel(dayOfMonth: Int, dayOfWeek: Int): Label = {
+
+		val dayLabel = new Label(dayOfMonth + ". " + WeekDays(dayOfWeek))
+
+		dayLabel.style = {
+			if (dayOfWeek == 6 || dayOfWeek == 0)
+				"color:red" else "color:black"
+		}
+		dayLabel
+	}
+
+	def makeTimeText(hour: Int, minute: Int): String = {
+
+		String.format("%02d", Int.box(hour)) + ":" +
+			String.format("%02d", Int.box(minute))
+	}
+
+	def makeDayPanes: Iterable[VBox] = {
+
+		val days = data.groupBy(ds => {
+			val cal = Calendar.getInstance
+			cal.setTime(ds.come)
+			cal.get(Calendar.DAY_OF_MONTH)
+		})
+		for ((k, v) <- days) yield {
+
+			val cal = Calendar.getInstance
+			cal.setTime(v(0).come)
+
+			val dayLabel = makeDayLabel(cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.DAY_OF_WEEK))
+
+			val timeLabels = for (ds <- v) yield {
+
+				cal.setTime(ds.come)
+				val come = makeTimeText(cal.get(Calendar.HOUR), cal.get(Calendar.MINUTE))
+
+				def go: String = {
+					if (!ds.go.isEmpty) {
+						cal.setTime(ds.go.get)
+						return makeTimeText(cal.get(Calendar.HOUR), cal.get(Calendar.MINUTE))
+					}
+					""
+				}
+
+				new Label(come + " - " + go)
+			}
+
+			new VBox {
+
+				content = List.concat(List(dayLabel), timeLabels)
+			}
+		}
+	}
+
+	def toggleButtons {
+		if (data(0).go.isEmpty) {
+			comeButton.disable = true
+			forgotGoButton.disable = true
+			goButton.disable = false
+			forgotComeButton.disable = false
+		} else {
+			comeButton.disable = false
+			forgotGoButton.disable = false
+			goButton.disable = true
+			forgotComeButton.disable = true
+		}
+	}
+
+	var dayPanes = makeDayPanes
+	var dayPanesBox = new VBox {
+		content = dayPanes
+	}
+
+	val comeButton = new Button {
+		id = "come"
+		maxWidth = Double.MaxValue
+		maxHeight = Double.MaxValue
+		text = "Come"
+		onMouseClicked = clicked(id.value)
+	}
+	val forgotComeButton = new Button {
+		id = "forgotCome"
+		maxWidth = Double.MaxValue
+		maxHeight = Double.MaxValue
+		text = "Forgot"
+		onMouseClicked = clicked(id.value)
+	}
+	val goButton = new Button {
+		id = "go"
+		maxWidth = Double.MaxValue
+		maxHeight = Double.MaxValue
+		text = "Go"
+		onMouseClicked = clicked(id.value)
+	}
+	val forgotGoButton = new Button {
+		id = "forgotGo"
+		maxWidth = Double.MaxValue
+		maxHeight = Double.MaxValue
+		text = "Forgot"
+		onMouseClicked = clicked(id.value)
+	}
+
+	toggleButtons
+
 	stage = new PrimaryStage {
 		title = "Time Clock"
-		scene = new Scene(25 * rem, 15 * rem) {
-			
-			root = new BorderPane {
-				
-				padding = Insets.apply(3, 3, 3, 3)
-				
-				left = new VBox {
+		scene = new Scene(25 * Constants.rem, 15 * Constants.rem) {
 
-					content = labels
+			root = new BorderPane {
+
+				padding = Insets.apply(3, 3, 3, 3)
+
+				center = new ScrollPane {
+
+					content = dayPanesBox
 
 				}
 				right = new GridPane {
-					
+
 					hgap = 3
 					vgap = 3
-					
-					val comeButton = new Button {
-						maxWidth = Double.MaxValue
-						maxHeight = Double.MaxValue
-						text = "Come"
-					}
+
 					GridPane.setConstraints(comeButton, 0, 0, 1, 1, HPos.CENTER, VPos.CENTER, Priority.SOMETIMES, Priority.ALWAYS)
-					
-					val forgotComeButton = new Button {
-						maxWidth = Double.MaxValue
-						maxHeight = Double.MaxValue
-						text = "Forgot"
-					}
+
 					GridPane.setConstraints(forgotComeButton, 0, 1, 1, 1, HPos.CENTER, VPos.BOTTOM)
-					
 
 					addColumn(0, comeButton, forgotComeButton)
-					
-					val goButton = new Button {
-						maxWidth = Double.MaxValue
-						maxHeight = Double.MaxValue
-						text = "Go"
-					}
+
 					GridPane.setConstraints(comeButton, 0, 0, 1, 1, HPos.CENTER, VPos.CENTER, Priority.SOMETIMES, Priority.ALWAYS)
-					
-					val forgotGoButton = new Button {
-						maxWidth = Double.MaxValue
-						maxHeight = Double.MaxValue
-						text = "Forgot"
-					}
+
 					GridPane.setConstraints(forgotComeButton, 0, 1, 1, 1, HPos.CENTER, VPos.BOTTOM)
-					
 
 					addColumn(1, goButton, forgotGoButton)
-					
 
 				}
 			}
