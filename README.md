@@ -3,11 +3,26 @@
 A simple time clock app with scalaFX.
 
 ## Timeline
+
+- Beta release 03.01.14
+
 - Alpha Buglist 03.01.14
-  - Adding to List is reverse
+  x Adding to List is reverse
+  x missing validation for forgotTextField input
+  x no 24h times
+  x missing enter-to-ok in dialog
+  x file not closed
+  x forgotCome range is not limited to times after the last time
+  
+  Optional:
+  ? verbose input error messages
   
 - Updated 22.12.13
 - Created 22.12.13
+
+## Roadmap
+- Cosmetics
+- German translation
 
 ## Requirements Specification
 

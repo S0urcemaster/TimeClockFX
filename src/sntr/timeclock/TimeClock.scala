@@ -18,8 +18,6 @@ import java.util.Date
 import java.text.DateFormat
 import scala.io.Source
 import scala.util.Marshal
-import scala.pickling._
-import json._
 import java.util.Calendar
 import java.io.FileWriter
 import java.text.SimpleDateFormat
@@ -29,6 +27,9 @@ import scala.collection.Iterator
 import javafx.scene.layout.Priority
 import scalafx.stage.Stage
 import scalafx.stage.Modality
+import scala.collection.SortedMap
+import scalafx.scene.input.KeyEvent
+import scalafx.scene.input.KeyCode
 
 class DataSet {
 
@@ -48,36 +49,6 @@ class DataSet {
 
 }
 
-//object Dialog {
-//	
-//	val stage = new Stage {
-//		title = "Type Time"
-//		initModality(Modality.WINDOW_MODAL)
-//		scene = new Scene(15 * Constants.rem, 8 * Constants.rem) {
-//			root = new BorderPane {
-//				top = new Label("Type in time:")
-//				center = new TextField {
-//					text = "hh:mm"
-//				}
-//				bottom = new HBox {
-//					content = List(
-//						new Button("Cancel") {
-//							onMouseClicked = clicked
-//						}
-//					)
-//				}
-//			}
-//		}
-//	}
-//		dialogStage.initModality(Modality.WINDOW_MODAL);
-//		dialogStage.setScene(new Scene(VBoxBuilder.create().
-//			children(new Text("Hi"), new Button("Ok.")).
-//			alignment(Pos.CENTER).padding(new Insets(5)).build()));
-//		dialogStage.show();
-//		)
-//	}
-//	
-//}
 
 object Constants {
 	val rem = Math.rint(new Text("").getLayoutBounds.getHeight)
@@ -88,14 +59,25 @@ object TimeClock extends JFXApp {
 	
 	val forgotTextField = new TextField {
 		text = "hh:mm"
+		onKeyPressed = {e: KeyEvent =>
+			if(e.code == KeyCode.ENTER) clicked("dOk")
+		}
 	}
+	
+	val forgotLabel = new Label("Type in time:")
+	val forgotErrorLabel = new Label("")
+	forgotErrorLabel.style = "-fx-text-fill: red"
 	
 	val dialog = new Stage {
 		title = "Type Time"
 		initModality(Modality.WINDOW_MODAL)
 		scene = new Scene(15 * Constants.rem, 8 * Constants.rem) {
 			root = new BorderPane {
-				top = new Label("Type in time:")
+				top = new VBox {
+					content = List(
+						forgotLabel, forgotErrorLabel
+					)
+				}
 				center = forgotTextField
 				bottom = new HBox {
 					content = List(
@@ -199,10 +181,23 @@ object TimeClock extends JFXApp {
 		}
 		val source = Source.fromFile(filename)
 
-		(for (line <- source.getLines) yield line2DataSet(line, getCurrentMonth, getCurrentYear)).toList
+		val list = (for (line <- source.getLines) yield line2DataSet(line, getCurrentMonth, getCurrentYear)).toList
+		
+		source.close
+		
+		list
 
 	}
 	
+	def getSmallestForgotComeDate: Date = {
+		data(0).go.get
+	}
+	
+	def getSmallestForgotGoDate: Date = {
+		data(0).come
+	}
+	
+	def forgotGo: Boolean = data(0).go.isEmpty
 	
 	def clicked(id: String) {
 
@@ -227,18 +222,49 @@ object TimeClock extends JFXApp {
 				toggleButtons
 			}
 			case "forgotCome" => {
+				forgotLabel.text = "Type in date and time:"
+				forgotErrorLabel.text = ""
+				val df = new SimpleDateFormat("dd.MM.yy HH:mm")
+				forgotTextField.text = df.format(getSmallestForgotComeDate)
 				dialog.show
 			}
 			case "forgotGo" => {
+				forgotLabel.text = "Type in time:"
+				forgotErrorLabel.text = ""
+				val df = new SimpleDateFormat("HH:mm")
+				forgotTextField.text = df.format(getSmallestForgotGoDate)
 				dialog.show
 			}
 			case "dOk" => {
-				dialog.hide
 				val cal = Calendar.getInstance
-				if (data(0).go.isEmpty) {
+				val calNow = Calendar.getInstance()
+				if (forgotGo) {
+					calNow.setTime(new Date)
 					cal.setTime(data(0).come)
-					cal.set(Calendar.HOUR, Integer.parseInt(forgotTextField.text.toString.substring(1)))
-					cal.set(Calendar.MINUTE, Integer.parseInt(forgotTextField.text.toString.substring(3, 4)))
+					try {
+						cal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(forgotTextField.text.value.substring(0, 2)))
+						cal.set(Calendar.MINUTE, Integer.parseInt(forgotTextField.text.value.substring(3, 5)))
+					} catch {
+						case e: Exception => {
+							forgotErrorLabel.text = "Invalid input"
+							return
+						}
+					}
+					val smallestDate = Calendar.getInstance()
+					smallestDate.setTime(getSmallestForgotGoDate)
+//					def cal2format(cal: Calendar): String = {
+//						val df = new SimpleDateFormat("dd.MM.yy HH:mm")
+//						df.format(cal.getTime)
+//					}
+//					println(cal2format(cal), cal2format(smallestDate))
+					if (cal.before(smallestDate)) {
+						forgotErrorLabel.text = "Time must be past the last entry's time"
+						return
+					}
+					if (cal.after(calNow)) {
+						forgotErrorLabel.text = "Time must be before or equal present"
+						return
+					}
 					data(0).go = Some(cal.getTime())
 					serialize(data)
 					dayPanes = makeDayPanes
@@ -246,8 +272,35 @@ object TimeClock extends JFXApp {
 					toggleButtons
 				}
 				else {
-					//forgotCome braucht ein Datum
+					val df = new SimpleDateFormat("dd.MM.yy HH:mm")
+					try {
+						cal.setTime(df.parse(forgotTextField.text.value))
+					} catch {
+						case e:Exception => {
+							forgotErrorLabel.text = "Invalid input"
+							return
+						}
+					}
+					val smallestDate = Calendar.getInstance()
+					smallestDate.setTime(getSmallestForgotComeDate)
+					if (cal.before(smallestDate)) {
+						forgotErrorLabel.text = "Time must be past the last entry's time"
+						return
+					}					
+					if (cal.after(calNow)) {
+						forgotErrorLabel.text = "Time must be before or equal present"
+						return
+					}
+					val ds = new DataSet { come = cal.getTime(); go = None }
+					data = ds :: data
+					serialize(data)
+	
+					dayPanes = makeDayPanes
+					dayPanesBox.content = dayPanes
+					toggleButtons
+					
 				}
+				dialog.hide
 			}
 			case "dCancel" => {
 				dialog.hide
@@ -292,7 +345,11 @@ object TimeClock extends JFXApp {
 			cal.setTime(ds.come)
 			cal.get(Calendar.DAY_OF_MONTH)
 		})
-		for ((k, v) <- days) yield {
+		
+		val sorted = days.toSeq.sortWith(_._1 > _._1).toMap
+		//val sorted = SortedMap(days.toSeq:_*)
+		
+		for ((k, v) <- sorted) yield {
 
 			val cal = Calendar.getInstance
 			cal.setTime(v(0).come)
@@ -302,12 +359,12 @@ object TimeClock extends JFXApp {
 			val timeLabels = for (ds <- v) yield {
 
 				cal.setTime(ds.come)
-				val come = makeTimeText(cal.get(Calendar.HOUR), cal.get(Calendar.MINUTE))
+				val come = makeTimeText(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
 
 				def go: String = {
 					if (!ds.go.isEmpty) {
 						cal.setTime(ds.go.get)
-						return makeTimeText(cal.get(Calendar.HOUR), cal.get(Calendar.MINUTE))
+						return makeTimeText(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
 					}
 					""
 				}
@@ -323,16 +380,16 @@ object TimeClock extends JFXApp {
 	}
 
 	def toggleButtons {
-		if (data(0).go.isEmpty) {
+		if (!data.isEmpty && data(0).go.isEmpty) {
 			comeButton.disable = true
-			forgotGoButton.disable = true
 			goButton.disable = false
-			forgotComeButton.disable = false
+			forgotComeButton.disable = true
+			forgotGoButton.disable = false
 		} else {
 			comeButton.disable = false
-			forgotGoButton.disable = false
 			goButton.disable = true
-			forgotComeButton.disable = true
+			forgotComeButton.disable = false
+			forgotGoButton.disable = true
 		}
 	}
 
