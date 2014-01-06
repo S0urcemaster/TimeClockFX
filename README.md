@@ -11,12 +11,12 @@ A simple time clock app with scalaFX.
 	- missing periods
 	
 - Alpha Buglist 03.01.14
-  x Adding to List is reverse
-  x missing validation for forgotTextField input
-  x no 24h times
-  x missing enter-to-ok in dialog
-  x file not closed
-  x forgotCome range is not limited to times after the last time
+  - Adding to List is reverse x
+  - missing validation for forgotTextField input x
+  - no 24h times x
+  - missing enter-to-ok in dialog x
+  - file not closed x
+  - forgotCome range is not limited to times after the last time x
   
   Optional:
   ? verbose input error messages
