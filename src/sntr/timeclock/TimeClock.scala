@@ -14,13 +14,9 @@ import javafx.scene.layout.RowConstraints
 import scalafx.geometry.VPos
 import scalafx.geometry.HPos
 import scalafx.geometry.Insets
-import java.util.Date
-import java.text.DateFormat
 import scala.io.Source
 import scala.util.Marshal
-import java.util.Calendar
 import java.io.FileWriter
-import java.text.SimpleDateFormat
 import java.io.File
 import scalafx.event.EventHandler
 import scala.collection.Iterator
@@ -30,18 +26,28 @@ import scalafx.stage.Modality
 import scala.collection.SortedMap
 import scalafx.scene.input.KeyEvent
 import scalafx.scene.input.KeyCode
+import org.joda.time.LocalDateTime
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.DateTime
+import org.joda.time.DateTimeFieldType
+import org.joda.time.LocalTime
+import org.joda.time.LocalDate
+import org.joda.time.Duration
+import org.joda.time.Period
+import org.joda.time.format.PeriodFormat
+import org.joda.time.format.PeriodFormatterBuilder
 
 class DataSet {
 
-	var come: Date = _
-	var go: Option[Date] = _
+	var come: DateTime = _
+	var go: Option[DateTime] = _
 
 	override def toString: String = {
-		val comeDf = DateFormat.getDateTimeInstance()
-		val sCome = comeDf.format(come)
+		val dtf = DateTimeFormat.forPattern("dd.MM.yyyy HH:mm")
+		val sCome = dtf.print(come)
 		val sGo = {
 			if (!go.isEmpty)
-				comeDf.format(go.get)
+				dtf.print(go.get)
 			else "missing"
 		}
 		sCome + " - " + sGo
@@ -51,12 +57,23 @@ class DataSet {
 
 
 object Constants {
+	
 	val rem = Math.rint(new Text("").getLayoutBounds.getHeight)
 	//println(rem) -> 24
+	
+	val appTitle = "Time Clock"
 }
 
 object TimeClock extends JFXApp {
 	
+	var data = TimeClock.unserialize
+
+	var monthlyPeriod = Period.ZERO
+
+	val WeekDays = List(
+
+		"", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+
 	val forgotTextField = new TextField {
 		text = "hh:mm"
 		onKeyPressed = {e: KeyEvent =>
@@ -93,66 +110,53 @@ object TimeClock extends JFXApp {
 		}
 	}
 	
-	val WeekDays = List(
-
-		"", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-
 	def getCurrentYear: Int = {
-		val cal = Calendar.getInstance
-		cal.setTime(new Date)
-		cal.get(Calendar.YEAR)
+		DateTime.now.getYear
 	}
 
 	def getCurrentMonth: Int = {
-		val cal = Calendar.getInstance
-		cal.setTime(new Date)
-		cal.get(Calendar.MONTH)
+		DateTime.now.getMonthOfYear
 	}
 
 	def generateFilename(): String = {
 
 		val year = getCurrentYear.toString
-		val month = getCurrentMonth + 1
+		val month = getCurrentMonth
 		year + String.format("%02d", Int.box(month)) + ".times"
 
 	}
 
+	
 	def dataSet2Line(dataSet: DataSet): String = {
-		val cal = Calendar.getInstance()
-		cal.setTime(dataSet.come)
-		val come = String.format("%02d", Int.box(cal.get(Calendar.DAY_OF_MONTH))) + "." +
-			String.format("%02d", Int.box(cal.get(Calendar.HOUR_OF_DAY))) + ":" +
-			String.format("%02d", Int.box(cal.get(Calendar.MINUTE)))
-		def go: String = {
+		val dtf = DateTimeFormat.forPattern("dd.HH:mm")
+		val come = dtf.print(dataSet.come)
+		val go = {
 			if (!dataSet.go.isEmpty) {
-				cal.setTime(dataSet.go.get)
-				return String.format("%02d", Int.box(cal.get(Calendar.DAY_OF_MONTH))) + "." +
-					String.format("%02d", Int.box(cal.get(Calendar.HOUR_OF_DAY))) + ":" +
-					String.format("%02d", Int.box(cal.get(Calendar.MINUTE)))
+				dtf.print(dataSet.go.get)
 			}
-			""
+			else ""
 		}
-
 		come + " - " + go
-
 	}
+	
 
 	def line2DataSet(line: String, month: Int, year: Int): DataSet = {
 
-		val cal = Calendar.getInstance
+		val dtf = DateTimeFormat.forPattern("dd.HH:mm")
 
-		val split = line.split("""\.|:|( - )""")
-
-		cal.set(year, month, Integer.parseInt(split(0)), Integer.parseInt(split(1)), Integer.parseInt(split(2)))
-
-		val dataSet = new DataSet { come = cal.getTime; go = None }
-
-		dataSet.come = cal.getTime
-
-		if (split.length > 3) {
-			cal.set(year, month, Integer.parseInt(split(3)), Integer.parseInt(split(4)), Integer.parseInt(split(5)))
-			dataSet.go = Some(cal.getTime)
-		} else dataSet.go = None
+		val split = line.split("""( - )""")
+		val partial = dtf.parseDateTime(split(0))
+		val comeDateTime = new DateTime(year, month, partial.getDayOfMonth, partial.getHourOfDay, partial.getMinuteOfHour)
+		
+		val dataSet = new DataSet { come = comeDateTime; go = None }
+		
+		dataSet.go = {
+			if (split.length > 1) {
+				val partial = dtf.parseDateTime(split(1))
+				Some(new DateTime(year, month, partial.getDayOfMonth, partial.getHourOfDay, partial.getMinuteOfHour))
+			}
+			else None
+		}
 
 		dataSet
 	}
@@ -189,15 +193,15 @@ object TimeClock extends JFXApp {
 
 	}
 	
-	def getSmallestForgotComeDate: Date = {
+	def getSmallestForgotComeDate: DateTime = {
 		data(0).go.get
 	}
 	
-	def getSmallestForgotGoDate: Date = {
+	def getSmallestForgotGoDate: DateTime = {
 		data(0).come
 	}
 	
-	def forgotGo: Boolean = data(0).go.isEmpty
+	def isForgotGo: Boolean = data(0).go.isEmpty
 	
 	def clicked(id: String) {
 
@@ -205,7 +209,7 @@ object TimeClock extends JFXApp {
 
 			case "come" => {
 
-				val ds = new DataSet { come = new Date; go = None }
+				val ds = new DataSet { come = DateTime.now; go = None }
 				data = ds :: data
 				serialize(data)
 
@@ -215,7 +219,7 @@ object TimeClock extends JFXApp {
 
 			}
 			case "go" => {
-				data(0).go = Some(new Date)
+				data(0).go = Some(DateTime.now)
 				serialize(data)
 				dayPanes = makeDayPanes
 				dayPanesBox.content = dayPanes
@@ -224,74 +228,78 @@ object TimeClock extends JFXApp {
 			case "forgotCome" => {
 				forgotLabel.text = "Type in date and time:"
 				forgotErrorLabel.text = ""
-				val df = new SimpleDateFormat("dd.MM.yy HH:mm")
-				forgotTextField.text = df.format(getSmallestForgotComeDate)
+				val dtf = DateTimeFormat.forPattern("HH:mm")
+				forgotTextField.text = dtf.print(getSmallestForgotComeDate)
 				dialog.show
 			}
 			case "forgotGo" => {
 				forgotLabel.text = "Type in time:"
 				forgotErrorLabel.text = ""
-				val df = new SimpleDateFormat("HH:mm")
-				forgotTextField.text = df.format(getSmallestForgotGoDate)
+				val dtf = DateTimeFormat.forPattern("dd.MM.yy HH:mm")
+				forgotTextField.text = dtf.print(getSmallestForgotGoDate)
 				dialog.show
 			}
 			case "dOk" => {
-				val cal = Calendar.getInstance
-				val calNow = Calendar.getInstance()
-				if (forgotGo) {
-					calNow.setTime(new Date)
-					cal.setTime(data(0).come)
-					try {
-						cal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(forgotTextField.text.value.substring(0, 2)))
-						cal.set(Calendar.MINUTE, Integer.parseInt(forgotTextField.text.value.substring(3, 5)))
-					} catch {
-						case e: Exception => {
-							forgotErrorLabel.text = "Invalid input"
-							return
+				val now = DateTime.now
+				if (isForgotGo) {
+					val dtf = DateTimeFormat.forPattern("dd.MM.yy HH:mm")
+					val inputDateTime = {
+						try {
+							dtf.parseDateTime(forgotTextField.text.value)
+						} catch {
+							case e: Exception => {
+								forgotErrorLabel.text = "Invalid input"
+								return
+							}
 						}
 					}
-					val smallestDate = Calendar.getInstance()
-					smallestDate.setTime(getSmallestForgotGoDate)
+					val smallestDate = getSmallestForgotGoDate
 //					def cal2format(cal: Calendar): String = {
 //						val df = new SimpleDateFormat("dd.MM.yy HH:mm")
 //						df.format(cal.getTime)
 //					}
 //					println(cal2format(cal), cal2format(smallestDate))
-					if (cal.before(smallestDate)) {
+					if (inputDateTime.isBefore(smallestDate)) {
 						forgotErrorLabel.text = "Time must be past the last entry's time"
 						return
 					}
-					if (cal.after(calNow)) {
+					if (inputDateTime.isAfter(now)) {
 						forgotErrorLabel.text = "Time must be before or equal present"
 						return
 					}
-					data(0).go = Some(cal.getTime())
+					data(0).go = Some(inputDateTime)
 					serialize(data)
 					dayPanes = makeDayPanes
 					dayPanesBox.content = dayPanes
 					toggleButtons
 				}
 				else {
-					val df = new SimpleDateFormat("dd.MM.yy HH:mm")
-					try {
-						cal.setTime(df.parse(forgotTextField.text.value))
-					} catch {
-						case e:Exception => {
-							forgotErrorLabel.text = "Invalid input"
-							return
+					
+					val dtf = DateTimeFormat.forPattern("HH:mm")
+					val inputTime = {
+						try {
+							dtf.parseLocalTime(forgotTextField.text.value)
+						} catch {
+							case e: Exception => {
+								forgotErrorLabel.text = "Invalid input"
+								return
+							}
 						}
 					}
-					val smallestDate = Calendar.getInstance()
-					smallestDate.setTime(getSmallestForgotComeDate)
-					if (cal.before(smallestDate)) {
+					val inputDateTime = {
+						val input = inputTime.toDateTimeToday
+						if (input.isAfter(now)){
+							input.minusDays(1)
+						}
+						else input
+						
+					}
+					val smallestDate = getSmallestForgotComeDate
+					if (inputDateTime.isBefore(smallestDate)) {
 						forgotErrorLabel.text = "Time must be past the last entry's time"
 						return
-					}					
-					if (cal.after(calNow)) {
-						forgotErrorLabel.text = "Time must be before or equal present"
-						return
 					}
-					val ds = new DataSet { come = cal.getTime(); go = None }
+					val ds = new DataSet { come = inputDateTime; go = None }
 					data = ds :: data
 					serialize(data)
 	
@@ -311,66 +319,70 @@ object TimeClock extends JFXApp {
 
 	}
 
-	var data = TimeClock.unserialize
 
-	//for ((k, v) <- days) {
-	//	val cal = Calendar.getInstance
-	//	cal.setTime(v(0).come)
-	//	println(k, WeekDays(cal.get(Calendar.DAY_OF_WEEK)), v)
-	//}
-
-	val df = new SimpleDateFormat("dd.MM.yyyy")
-
-	def makeDayLabel(dayOfMonth: Int, dayOfWeek: Int): Label = {
-
-		val dayLabel = new Label(dayOfMonth + ". " + WeekDays(dayOfWeek))
+	def makeDayLabel(come: DateTime, period: Period): Label = {
+		
+		val durationText = " (" +String.format("%02d", Long.box(period.getHours)) +":" +String.format("%02d", Long.box(period.getMinutes)) +")"
+		val dayLabel = new Label(come.getDayOfMonth + ". " + come.dayOfWeek.getAsText +" " +durationText)
 
 		dayLabel.style = {
-			if (dayOfWeek == 6 || dayOfWeek == 0)
-				"color:red" else "color:black"
+			val size = "-fx-font-size:1.5em"
+			val color = if (come.getDayOfWeek == 7)	"-fx-text-fill:red"
+				else if (come.getDayOfWeek == 6) "-fx-text-fill:blue"
+				else "-fx-text-fill:black"
+			size +";" +color
 		}
 		dayLabel
 	}
 
+	
 	def makeTimeText(hour: Int, minute: Int): String = {
 
 		String.format("%02d", Int.box(hour)) + ":" +
 			String.format("%02d", Int.box(minute))
 	}
 
+
 	def makeDayPanes: Iterable[VBox] = {
 
 		val days = data.groupBy(ds => {
-			val cal = Calendar.getInstance
-			cal.setTime(ds.come)
-			cal.get(Calendar.DAY_OF_MONTH)
+			ds.come.getDayOfMonth
 		})
 		
 		val sorted = days.toSeq.sortWith(_._1 > _._1).toMap
-		//val sorted = SortedMap(days.toSeq:_*)
+		var dayPeriod = Period.ZERO
 		
 		for ((k, v) <- sorted) yield {
 
-			val cal = Calendar.getInstance
-			cal.setTime(v(0).come)
-
-			val dayLabel = makeDayLabel(cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.DAY_OF_WEEK))
+			val come = v(0).come
 
 			val timeLabels = for (ds <- v) yield {
 
-				cal.setTime(ds.come)
-				val come = makeTimeText(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+				val comeText = makeTimeText(ds.come.getHourOfDay, ds.come.getMinuteOfHour)
 
-				def go: String = {
+				def goText: String = {
 					if (!ds.go.isEmpty) {
-						cal.setTime(ds.go.get)
-						return makeTimeText(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+						return makeTimeText(ds.go.get.getHourOfDay, ds.go.get.getMinuteOfHour)
 					}
 					""
 				}
-
-				new Label(come + " - " + go)
+				def period: Period = {
+					if (!ds.go.isEmpty) return new Period(ds.come, ds.go.get)
+					Period.ZERO
+				}
+				dayPeriod = dayPeriod.plus(period)
+				val pf = PeriodFormat.getDefault
+				val periodText = "(" +String.format("%02d", Long.box(period.getHours)) +":" +String.format("%02d", Long.box(period.getMinutes)) +")"
+				val label = new Label(comeText + " - " + goText +" " +periodText)
+				label.style = {
+					"-fx-translate-x: 1em"
+				}
+				label
 			}
+
+			monthlyPeriod = monthlyPeriod.plus(dayPeriod)
+			
+			val dayLabel = makeDayLabel(come, dayPeriod)
 
 			new VBox {
 
@@ -378,7 +390,21 @@ object TimeClock extends JFXApp {
 			}
 		}
 	}
+	
+	def adjustTitle = {
+		val now = DateTime.now
+		val pf = new PeriodFormatterBuilder()
+			.printZeroAlways
+			.minimumPrintedDigits(2)
+			.appendHours
+			.appendSeparator(":")
+			.minimumPrintedDigits(2)
+			.appendMinutes
+			.toFormatter
+		stage.title = Constants.appTitle +" : " +now.monthOfYear.getAsText + " " +now.getYear +" (" +pf.print(monthlyPeriod) +")"
+	}
 
+	
 	def toggleButtons {
 		if (!data.isEmpty && data(0).go.isEmpty) {
 			comeButton.disable = true
@@ -391,11 +417,6 @@ object TimeClock extends JFXApp {
 			forgotComeButton.disable = false
 			forgotGoButton.disable = true
 		}
-	}
-
-	var dayPanes = makeDayPanes
-	var dayPanesBox = new VBox {
-		content = dayPanes
 	}
 
 	val comeButton = new Button {
@@ -427,8 +448,13 @@ object TimeClock extends JFXApp {
 		onMouseClicked = clicked(id.value)
 	}
 
+	var dayPanes = makeDayPanes
+	var dayPanesBox = new VBox {
+		content = dayPanes
+	}
+	
 	toggleButtons
-
+	
 	stage = new PrimaryStage {
 		title = "Time Clock"
 		scene = new Scene(25 * Constants.rem, 15 * Constants.rem) {
@@ -463,5 +489,8 @@ object TimeClock extends JFXApp {
 			}
 		}
 	}
+
+	adjustTitle
+
 
 }
