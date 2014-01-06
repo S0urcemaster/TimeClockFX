@@ -68,7 +68,7 @@ object TimeClock extends JFXApp {
 	
 	var data = TimeClock.unserialize
 
-	var monthlyPeriod = Period.ZERO
+	var monthlyDuration = Period.ZERO
 
 	val WeekDays = List(
 
@@ -216,6 +216,7 @@ object TimeClock extends JFXApp {
 				dayPanes = makeDayPanes
 				dayPanesBox.content = dayPanes
 				toggleButtons
+				adjustTitle
 
 			}
 			case "go" => {
@@ -224,6 +225,7 @@ object TimeClock extends JFXApp {
 				dayPanes = makeDayPanes
 				dayPanesBox.content = dayPanes
 				toggleButtons
+				adjustTitle
 			}
 			case "forgotCome" => {
 				forgotLabel.text = "Type in date and time:"
@@ -350,7 +352,8 @@ object TimeClock extends JFXApp {
 		})
 		
 		val sorted = days.toSeq.sortWith(_._1 > _._1).toMap
-		var dayPeriod = Period.ZERO
+		var dayDuration = Duration.ZERO
+		monthlyDuration = Period.ZERO
 		
 		for ((k, v) <- sorted) yield {
 
@@ -366,13 +369,13 @@ object TimeClock extends JFXApp {
 					}
 					""
 				}
-				def period: Period = {
-					if (!ds.go.isEmpty) return new Period(ds.come, ds.go.get)
-					Period.ZERO
+				def duration: Duration = {
+					if (!ds.go.isEmpty) return new Duration(ds.come, ds.go.get)
+					Duration.ZERO
 				}
-				dayPeriod = dayPeriod.plus(period)
+				dayDuration = dayDuration.plus(duration)
 				val pf = PeriodFormat.getDefault
-				val periodText = "(" +String.format("%02d", Long.box(period.getHours)) +":" +String.format("%02d", Long.box(period.getMinutes)) +")"
+				val periodText = "(" +String.format("%02d", Long.box(duration.toPeriod().getHours)) +":" +String.format("%02d", Long.box(duration.toPeriod().getMinutes)) +")"
 				val label = new Label(comeText + " - " + goText +" " +periodText)
 				label.style = {
 					"-fx-translate-x: 1em"
@@ -380,9 +383,9 @@ object TimeClock extends JFXApp {
 				label
 			}
 
-			monthlyPeriod = monthlyPeriod.plus(dayPeriod)
+			monthlyDuration = monthlyDuration.plus(dayDuration.toPeriod)
 			
-			val dayLabel = makeDayLabel(come, dayPeriod)
+			val dayLabel = makeDayLabel(come, dayDuration.toPeriod)
 
 			new VBox {
 
@@ -401,7 +404,7 @@ object TimeClock extends JFXApp {
 			.minimumPrintedDigits(2)
 			.appendMinutes
 			.toFormatter
-		stage.title = Constants.appTitle +" : " +now.monthOfYear.getAsText + " " +now.getYear +" (" +pf.print(monthlyPeriod) +")"
+		stage.title = Constants.appTitle +" : " +now.monthOfYear.getAsText + " " +now.getYear +" (" +pf.print(monthlyDuration.toPeriod) +")"
 	}
 
 	

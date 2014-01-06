@@ -8,7 +8,7 @@ A simple time clock app with scalaFX.
 	- Added periods display
 
 - Beta release 03.01.14
-	- missing time sums
+	- missing periods
 	
 - Alpha Buglist 03.01.14
   x Adding to List is reverse
@@ -28,6 +28,7 @@ A simple time clock app with scalaFX.
 - Cosmetics
 - German translation
 - Config file
+- Tests
 
 ## Requirements Specification
 
