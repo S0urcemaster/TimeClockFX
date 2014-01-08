@@ -36,6 +36,9 @@ import org.joda.time.Duration
 import org.joda.time.Period
 import org.joda.time.format.PeriodFormat
 import org.joda.time.format.PeriodFormatterBuilder
+import scala.collection.immutable.TreeMap
+import scala.math.Ordering
+import scala.collection.SortedSet
 
 class DataSet {
 
@@ -52,7 +55,15 @@ class DataSet {
 		}
 		sCome + " - " + sGo
 	}
+}
 
+
+class Style (style: String) {
+	
+	def addStyle(style: String): String = {
+		this.style +style
+	}
+	
 }
 
 
@@ -64,11 +75,12 @@ object Constants {
 	val appTitle = "Time Clock"
 }
 
+
 object TimeClock extends JFXApp {
 	
 	var data = TimeClock.unserialize
 
-	var monthlyDuration = Period.ZERO
+	var monthlyDuration = Duration.ZERO
 
 	val WeekDays = List(
 
@@ -173,7 +185,8 @@ object TimeClock extends JFXApp {
 			list.foreach(dataSet => {
 				fw.write(dataSet2Line(dataSet) + "\n")
 			})
-		} finally fw.close()
+		}
+		finally fw.close()
 
 	}
 
@@ -343,20 +356,44 @@ object TimeClock extends JFXApp {
 		String.format("%02d", Int.box(hour)) + ":" +
 			String.format("%02d", Int.box(minute))
 	}
-
-
+	
+	def getDataSetDuration(ds: DataSet): Duration = {
+		if (!ds.go.isEmpty) return new Duration(ds.come, ds.go.get)
+		Duration.ZERO
+	}
+	
+	object ReverseOrdering extends Ordering[Int] {
+		def compare(a:Int, b:Int) = {
+			//println("compare " +a +", " +b)
+			b compare a
+		}
+	}
+	
+	object DataSetOrdering extends Ordering[DataSet] {
+		def compare(a:DataSet, b:DataSet) = {
+			if (a.come.isBefore(b.come)) 1
+			else -1
+		}
+	}
+	
 	def makeDayPanes: Iterable[VBox] = {
 
-		val days = data.groupBy(ds => {
-			ds.come.getDayOfMonth
-		})
+		val days = data.groupBy(_.come.getDayOfMonth)
 		
-		val sorted = days.toSeq.sortWith(_._1 > _._1).toMap
-		var dayDuration = Duration.ZERO
-		monthlyDuration = Period.ZERO
+		val daysOrdered = {
+			for ((k, v) <- days) yield {
+				k -> v.sorted(DataSetOrdering)
+			}
+		}
+		
+		val sorted = SortedMap[Int, List[DataSet]]()(ReverseOrdering) ++ daysOrdered
+		
+		monthlyDuration = Duration.ZERO
 		
 		for ((k, v) <- sorted) yield {
 
+			var dayDuration = Duration.ZERO
+			
 			val come = v(0).come
 
 			val timeLabels = for (ds <- v) yield {
@@ -369,10 +406,7 @@ object TimeClock extends JFXApp {
 					}
 					""
 				}
-				def duration: Duration = {
-					if (!ds.go.isEmpty) return new Duration(ds.come, ds.go.get)
-					Duration.ZERO
-				}
+				val duration = getDataSetDuration(ds)
 				dayDuration = dayDuration.plus(duration)
 				val pf = PeriodFormat.getDefault
 				val periodText = "(" +String.format("%02d", Long.box(duration.toPeriod().getHours)) +":" +String.format("%02d", Long.box(duration.toPeriod().getMinutes)) +")"
@@ -383,7 +417,7 @@ object TimeClock extends JFXApp {
 				label
 			}
 
-			monthlyDuration = monthlyDuration.plus(dayDuration.toPeriod)
+			monthlyDuration = monthlyDuration.plus(dayDuration)
 			
 			val dayLabel = makeDayLabel(come, dayDuration.toPeriod)
 
@@ -402,7 +436,7 @@ object TimeClock extends JFXApp {
 			.appendHours
 			.appendSeparator(":")
 			.minimumPrintedDigits(2)
-			.appendMinutes
+			.appendMinutes()
 			.toFormatter
 		stage.title = Constants.appTitle +" : " +now.monthOfYear.getAsText + " " +now.getYear +" (" +pf.print(monthlyDuration.toPeriod) +")"
 	}
@@ -467,7 +501,14 @@ object TimeClock extends JFXApp {
 				padding = Insets.apply(3, 3, 3, 3)
 
 				center = new ScrollPane {
-
+					
+					style = "-fx-focus-color:transparent"
+					padding = Insets(
+							top = 5,
+							right = 5,
+							bottom = 5,
+							left = 5
+					)
 					content = dayPanesBox
 
 				}

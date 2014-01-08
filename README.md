@@ -2,7 +2,14 @@
 
 A simple time clock app with scalaFX.
 
+Features:
+- Tracks come/go in monthly file
+- Displays times per month
+
 ## Timeline
+- 07.01.14
+	- Month duration fix
+	- Sorting fix
 
 - 06.01.14 
 	- Added periods display
@@ -11,24 +18,39 @@ A simple time clock app with scalaFX.
 	- missing periods
 	
 - Alpha Buglist 03.01.14
-  - Adding to List is reverse x
-  - missing validation for forgotTextField input x
-  - no 24h times x
-  - missing enter-to-ok in dialog x
-  - file not closed x
-  - forgotCome range is not limited to times after the last time x
+  - Adding to List is reverse
+  - missing validation for forgotTextField input
+  - no 24h times
+  - missing enter-to-ok in dialog
+  - file not closed
+  - forgotCome range is not limited to times after the last time
   
   Optional:
   ? verbose input error messages
   
-- Updated 22.12.13
 - Created 22.12.13
 
 ## Roadmap
-- Cosmetics
-- German translation
-- Config file
+### Required
 - Tests
+	- Timing
+	  - Month change
+  - Linux
+  - Resizing
+- Cosmetics
+- Simple file backup
+
+### Issues
+- Month/Year change while running
+- Line Breaks Windows
+- day groups not in order
+
+### Optional
+- German translation
+- Configuration
+	- Single-/ double Button design
+	- Different styles
+- Better dialog
 
 ## Requirements Specification
 

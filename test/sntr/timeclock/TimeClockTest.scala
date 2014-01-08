@@ -1,10 +1,12 @@
 package sntr.timeclock
 
-import java.util.Date
-import java.text.DateFormat
-import java.util.Calendar
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
+
 
 object TimeClockTest {
+	
+	val dtf = DateTimeFormat.forPattern("dd.MM.yy HH:mm")
 	
 	def testUnserialize {
 		
@@ -15,15 +17,12 @@ object TimeClockTest {
 	}
 	
 	def testSerialize {
+		val cal1 = DateTime.parse("30.11.13 11:00", dtf)
 		
-		val cal1 = Calendar.getInstance()
-		cal1.set(13, 11, 30, 11, 0)
-		
-		val cal2 = Calendar.getInstance()
-		cal2.set(13, 11 ,30 ,14 ,14)
+		val cal2 = DateTime.parse("30.11.13 13:14", dtf)
 		
 		val list = List(
-				new DataSet {come = new Date(cal1.getTimeInMillis()); go = Option(new Date(cal2.getTimeInMillis()))}
+				new DataSet {come = cal1; go = Some(cal2)}
 				)
 				
 		TimeClock.serialize(list)
@@ -36,16 +35,15 @@ object TimeClockTest {
 	
 	def testDataSet2Line {
 		
-		val cal = Calendar.getInstance
-		cal.set(2013, 11, 30, 13, 4)
-		
-		val dataSet = new DataSet
-		dataSet.come = cal.getTime()
-		cal.add(Calendar.MINUTE, 5)
-		dataSet.go = Option(cal.getTime())
-		val line = TimeClock.dataSet2Line(dataSet)
-		println(line)
-		assert(line == "30 13 4 - 30 13 9")
+//		val cal = DateTime.parse("301113 1314", dtf)
+//		
+//		val dataSet = new DataSet
+//		dataSet.come = cal.getTime()
+//		cal.add(Calendar.MINUTE, 5)
+//		dataSet.go = Option(cal.getTime())
+//		val line = TimeClock.dataSet2Line(dataSet)
+//		println(line)
+//		assert(line == "30 13 4 - 30 13 9")
 	}
 	
 	def testGenerateFilename {
