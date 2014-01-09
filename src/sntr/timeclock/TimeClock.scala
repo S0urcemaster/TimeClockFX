@@ -58,27 +58,24 @@ class DataSet {
 	}
 }
 
+class Style(style: String) {
 
-class Style (style: String) {
-	
 	def addStyle(style: String): String = {
-		this.style +style
+		this.style + style
 	}
-	
+
 }
 
-
 object Constants {
-	
+
 	val rem = Math.rint(new Text("").getLayoutBounds.getHeight)
 	//println(rem) -> 24
-	
+
 	val appTitle = "Time Clock"
 }
 
-
 object TimeClock extends JFXApp {
-	
+
 	var data = TimeClock.unserialize
 
 	var monthlyDuration = Duration.ZERO
@@ -89,15 +86,15 @@ object TimeClock extends JFXApp {
 
 	val forgotTextField = new TextField {
 		text = "hh:mm"
-		onKeyPressed = {e: KeyEvent =>
-			if(e.code == KeyCode.ENTER) clicked("dOk")
+		onKeyPressed = { e: KeyEvent =>
+			if (e.code == KeyCode.ENTER) clicked("dOk")
 		}
 	}
-	
+
 	val forgotLabel = new Label("Type in time:")
 	val forgotErrorLabel = new Label("")
 	forgotErrorLabel.style = "-fx-text-fill: red"
-	
+
 	val dialog = new Stage {
 		title = "Type Time"
 		initModality(Modality.WINDOW_MODAL)
@@ -105,8 +102,7 @@ object TimeClock extends JFXApp {
 			root = new BorderPane {
 				top = new VBox {
 					content = List(
-						forgotLabel, forgotErrorLabel
-					)
+						forgotLabel, forgotErrorLabel)
 				}
 				center = forgotTextField
 				bottom = new HBox {
@@ -116,13 +112,12 @@ object TimeClock extends JFXApp {
 						},
 						new Button("Ok") {
 							onMouseClicked = clicked("dOk")
-						}
-					)
+						})
 				}
 			}
 		}
 	}
-	
+
 	def getCurrentYear: Int = {
 		DateTime.now.getYear
 	}
@@ -139,19 +134,16 @@ object TimeClock extends JFXApp {
 
 	}
 
-	
 	def dataSet2Line(dataSet: DataSet): String = {
 		val dtf = DateTimeFormat.forPattern("dd.HH:mm")
 		val come = dtf.print(dataSet.come)
 		val go = {
 			if (!dataSet.go.isEmpty) {
 				dtf.print(dataSet.go.get)
-			}
-			else ""
+			} else ""
 		}
 		come + " - " + go
 	}
-	
 
 	def line2DataSet(line: String, month: Int, year: Int): DataSet = {
 
@@ -160,15 +152,14 @@ object TimeClock extends JFXApp {
 		val split = line.split("""( - )""")
 		val partial = dtf.parseDateTime(split(0))
 		val comeDateTime = new DateTime(year, month, partial.getDayOfMonth, partial.getHourOfDay, partial.getMinuteOfHour)
-		
+
 		val dataSet = new DataSet { come = comeDateTime; go = None }
-		
+
 		dataSet.go = {
 			if (split.length > 1) {
 				val partial = dtf.parseDateTime(split(1))
 				Some(new DateTime(year, month, partial.getDayOfMonth, partial.getHourOfDay, partial.getMinuteOfHour))
-			}
-			else None
+			} else None
 		}
 
 		dataSet
@@ -186,8 +177,7 @@ object TimeClock extends JFXApp {
 			list.foreach(dataSet => {
 				fw.write(dataSet2Line(dataSet) + "\n")
 			})
-		}
-		finally fw.close()
+		} finally fw.close()
 
 	}
 
@@ -200,29 +190,29 @@ object TimeClock extends JFXApp {
 		val source = Source.fromFile(filename)
 
 		val list = (for (line <- source.getLines) yield line2DataSet(line, getCurrentMonth, getCurrentYear)).toList
-		
+
 		source.close
-		
+
 		list
 
 	}
-	
+
 	def getSmallestForgotComeDate: DateTime = {
 		data(0).go.get
 	}
-	
+
 	def getSmallestForgotGoDate: DateTime = {
 		data(0).come
 	}
-	
+
 	def isForgotGo: Boolean = data(0).go.isEmpty
-	
+
 	def clicked(id: String) {
 
 		id match {
 
 			case "come" => {
-				"hello" +" world"
+				"hello" + " world"
 				val ds = new DataSet { come = DateTime.now; go = None }
 				data = ds :: data
 				serialize(data)
@@ -283,9 +273,8 @@ object TimeClock extends JFXApp {
 					dayPanes = makeDayPanes
 					dayPanesBox.content = dayPanes
 					toggleButtons
-				}
-				else {
-					
+				} else {
+
 					val dtf = DateTimeFormat.forPattern("HH:mm")
 					val inputTime = {
 						try {
@@ -299,11 +288,10 @@ object TimeClock extends JFXApp {
 					}
 					val inputDateTime = {
 						val input = inputTime.toDateTimeToday
-						if (input.isAfter(now)){
+						if (input.isAfter(now)) {
 							input.minusDays(1)
-						}
-						else input
-						
+						} else input
+
 					}
 					val smallestDate = getSmallestForgotComeDate
 					if (inputDateTime.isBefore(smallestDate)) {
@@ -313,84 +301,81 @@ object TimeClock extends JFXApp {
 					val ds = new DataSet { come = inputDateTime; go = None }
 					data = ds :: data
 					serialize(data)
-	
+
 					dayPanes = makeDayPanes
 					dayPanesBox.content = dayPanes
 					toggleButtons
-					
+
 				}
 				dialog.hide
 			}
 			case "dCancel" => {
 				dialog.hide
-				
+
 			}
 
 		}
 
 	}
 
-
 	def makeDayLabel(come: DateTime, period: Period): Label = {
-		
-		val durationText = " (" +String.format("%02d", Long.box(period.getHours)) +":" +String.format("%02d", Long.box(period.getMinutes)) +")"
-		val dayLabel = new Label(come.getDayOfMonth + ". " + come.dayOfWeek.getAsText +" " +durationText)
+
+		val durationText = " (" + String.format("%02d", Long.box(period.getHours)) + ":" + String.format("%02d", Long.box(period.getMinutes)) + ")"
+		val dayLabel = new Label(come.getDayOfMonth + ". " + come.dayOfWeek.getAsText + " " + durationText)
 
 		dayLabel.style = {
 			val size = "-fx-font-size:1.5em"
-			val color = if (come.getDayOfWeek == 7)	"-fx-text-fill:red"
-				else if (come.getDayOfWeek == 6) "-fx-text-fill:blue"
-				else "-fx-text-fill:black"
-			size +";" +color
+			val color = if (come.getDayOfWeek == 7) "-fx-text-fill:red"
+			else if (come.getDayOfWeek == 6) "-fx-text-fill:blue"
+			else "-fx-text-fill:black"
+			size + ";" + color + ";-fx-translate-x:0.5em"
 		}
 		dayLabel
 	}
 
-	
 	def makeTimeText(hour: Int, minute: Int): String = {
 
 		String.format("%02d", Int.box(hour)) + ":" +
 			String.format("%02d", Int.box(minute))
 	}
-	
+
 	def getDataSetDuration(ds: DataSet): Duration = {
 		if (!ds.go.isEmpty) return new Duration(ds.come, ds.go.get)
 		Duration.ZERO
 	}
-	
+
 	object ReverseOrdering extends Ordering[Int] {
-		def compare(a:Int, b:Int) = {
+		def compare(a: Int, b: Int) = {
 			//println("compare " +a +", " +b)
 			b compare a
 		}
 	}
-	
+
 	object DataSetOrdering extends Ordering[DataSet] {
-		def compare(a:DataSet, b:DataSet) = {
+		def compare(a: DataSet, b: DataSet) = {
 			if (a.come.isBefore(b.come)) 1
 			else -1
 		}
 	}
-	
+
 	def makeDayPanes: Iterable[VBox] = {
 
 		val days = data.groupBy(_.come.getDayOfMonth)
-		
+
 		val daysOrdered = {
 			for ((k, v) <- days) yield {
 				k -> v.sorted(DataSetOrdering)
 			}
 		}
-		
+
 		val sorted = SortedMap[Int, List[DataSet]]()(ReverseOrdering) ++ daysOrdered
-		
-		
+
 		monthlyDuration = Duration.ZERO
-		
+
 		for ((k, v) <- sorted) yield {
 
 			var dayDuration = Duration.ZERO
-			
+
 			val come = v(0).come
 
 			val timeLabels = for (ds <- v) yield {
@@ -406,8 +391,8 @@ object TimeClock extends JFXApp {
 				val duration = getDataSetDuration(ds)
 				dayDuration = dayDuration.plus(duration)
 				val pf = PeriodFormat.getDefault
-				val periodText = "(" +String.format("%02d", Long.box(duration.toPeriod().getHours)) +":" +String.format("%02d", Long.box(duration.toPeriod().getMinutes)) +")"
-				val label = new Label(comeText + " - " + goText +" " +periodText)
+				val periodText = "(" + String.format("%02d", Long.box(duration.toPeriod().getHours)) + ":" + String.format("%02d", Long.box(duration.toPeriod().getMinutes)) + ")"
+				val label = new Label(comeText + " - " + goText + " " + periodText)
 				label.style = {
 					"-fx-translate-x: 1em"
 				}
@@ -415,7 +400,7 @@ object TimeClock extends JFXApp {
 			}
 
 			monthlyDuration = monthlyDuration.plus(dayDuration)
-			
+
 			val dayLabel = makeDayLabel(come, dayDuration.toPeriod)
 
 			new VBox {
@@ -424,7 +409,7 @@ object TimeClock extends JFXApp {
 			}
 		}
 	}
-	
+
 	def adjustTitle = {
 		val now = DateTime.now
 		val pf = new PeriodFormatterBuilder()
@@ -435,10 +420,9 @@ object TimeClock extends JFXApp {
 			.minimumPrintedDigits(2)
 			.appendMinutes()
 			.toFormatter
-		stage.title = Constants.appTitle +" : " +now.monthOfYear.getAsText + " " +now.getYear +" (" +pf.print(monthlyDuration.toPeriod) +")"
+		stage.title = Constants.appTitle + " : " + now.monthOfYear.getAsText + " " + now.getYear + " (" + pf.print(monthlyDuration.toPeriod) + ")"
 	}
 
-	
 	def toggleButtons {
 		if (!data.isEmpty && data(0).go.isEmpty) {
 			comeButton.disable = true
@@ -459,6 +443,12 @@ object TimeClock extends JFXApp {
 		maxHeight = Double.MaxValue
 		text = "Come"
 		onMouseClicked = clicked(id.value)
+		margin = Insets(
+			top = 5,
+			right = 0,
+			bottom = 0,
+			left = 5)
+			style = "-fx-focus-color:transparent"
 	}
 	val forgotComeButton = new Button {
 		id = "forgotCome"
@@ -466,6 +456,12 @@ object TimeClock extends JFXApp {
 		maxHeight = Double.MaxValue
 		text = "Forgot"
 		onMouseClicked = clicked(id.value)
+		margin = Insets(
+			top = 0,
+			right = 0,
+			bottom = 5,
+			left = 5)
+			style = "-fx-focus-color:transparent"
 	}
 	val goButton = new Button {
 		id = "go"
@@ -473,6 +469,12 @@ object TimeClock extends JFXApp {
 		maxHeight = Double.MaxValue
 		text = "Go"
 		onMouseClicked = clicked(id.value)
+		margin = Insets(
+			top = 5,
+			right = 5,
+			bottom = 0,
+			left = 0)
+			style = "-fx-focus-color:transparent"
 	}
 	val forgotGoButton = new Button {
 		id = "forgotGo"
@@ -480,21 +482,27 @@ object TimeClock extends JFXApp {
 		maxHeight = Double.MaxValue
 		text = "Forgot"
 		onMouseClicked = clicked(id.value)
+		margin = Insets(
+			top = 0,
+			right = 5,
+			bottom = 5,
+			left = 0)
+			style = "-fx-focus-color:transparent"
 	}
 
 	var dayPanes = makeDayPanes
 	var dayPanesBox = new VBox {
 		content = dayPanes
 	}
-	
+
 	toggleButtons
-	
+
 	stage = new PrimaryStage {
 		title = "Time Clock"
 		//stage.asInstanceOf[javafx.stage.Stage].icons = new ObservableList()
 		//.add(new Image(TimeClock.getClass().getResourceAsStream("icon1.png")))
 		scene = new Scene(25 * Constants.rem, 15 * Constants.rem) {
-
+			stylesheets.add(TimeClock.getClass.getClassLoader.getResource("TimeClock.css").toExternalForm)
 			root = new BorderPane {
 
 				padding = Insets.apply(3, 3, 3, 3)
@@ -502,12 +510,11 @@ object TimeClock extends JFXApp {
 				center = new ScrollPane {
 					
 					style = "-fx-focus-color:transparent"
-					padding = Insets(
-							top = 5,
-							right = 5,
-							bottom = 5,
-							left = 5
-					)
+					margin = Insets(
+						top = 5,
+						right = 5,
+						bottom = 5,
+						left = 5)
 					content = dayPanesBox
 
 				}
@@ -534,6 +541,5 @@ object TimeClock extends JFXApp {
 	}
 
 	adjustTitle
-
 
 }

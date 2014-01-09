@@ -9,7 +9,10 @@ Features:
 [Download latest stable build TimeClockFX.zip (file-upload.net page)](http://www.file-upload.net/download-8497539/TimeClockFX.zip.html)
 
 ## Timeline
-- 08.01.16
+- 09.01.14
+	- Cosmetics
+	
+- 08.01.14
 	- RC1 released
 	- Fixed Ordering
 
@@ -49,7 +52,6 @@ Features:
 ### Issues
 - Month/Year change while running
 - Line Breaks Windows
-- day groups not in order
 
 ### Optional
 - German translation
