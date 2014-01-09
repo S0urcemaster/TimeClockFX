@@ -39,6 +39,7 @@ import org.joda.time.format.PeriodFormatterBuilder
 import scala.collection.immutable.TreeMap
 import scala.math.Ordering
 import scala.collection.SortedSet
+import javafx.scene.image.Image
 
 class DataSet {
 
@@ -221,7 +222,7 @@ object TimeClock extends JFXApp {
 		id match {
 
 			case "come" => {
-
+				"hello" +" world"
 				val ds = new DataSet { come = DateTime.now; go = None }
 				data = ds :: data
 				serialize(data)
@@ -269,11 +270,6 @@ object TimeClock extends JFXApp {
 						}
 					}
 					val smallestDate = getSmallestForgotGoDate
-//					def cal2format(cal: Calendar): String = {
-//						val df = new SimpleDateFormat("dd.MM.yy HH:mm")
-//						df.format(cal.getTime)
-//					}
-//					println(cal2format(cal), cal2format(smallestDate))
 					if (inputDateTime.isBefore(smallestDate)) {
 						forgotErrorLabel.text = "Time must be past the last entry's time"
 						return
@@ -388,6 +384,7 @@ object TimeClock extends JFXApp {
 		
 		val sorted = SortedMap[Int, List[DataSet]]()(ReverseOrdering) ++ daysOrdered
 		
+		
 		monthlyDuration = Duration.ZERO
 		
 		for ((k, v) <- sorted) yield {
@@ -494,6 +491,8 @@ object TimeClock extends JFXApp {
 	
 	stage = new PrimaryStage {
 		title = "Time Clock"
+		//stage.asInstanceOf[javafx.stage.Stage].icons = new ObservableList()
+		//.add(new Image(TimeClock.getClass().getResourceAsStream("icon1.png")))
 		scene = new Scene(25 * Constants.rem, 15 * Constants.rem) {
 
 			root = new BorderPane {

@@ -6,7 +6,13 @@ Features:
 - Tracks come/go in monthly file
 - Displays times per month
 
+[Download TimeClock.zip](TimeClock.zip)
+
 ## Timeline
+- 08.01.16
+	- RC1 released
+	- Fixed Ordering
+
 - 07.01.14
 	- Month duration fix
 	- Sorting fix
@@ -28,7 +34,7 @@ Features:
   Optional:
   ? verbose input error messages
   
-- Created 22.12.13
+- Created 21.12.13
 
 ## Roadmap
 ### Required
