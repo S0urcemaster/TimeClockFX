@@ -6,7 +6,7 @@ Features:
 - Tracks come/go in monthly file
 - Displays times per month
 
-[Download TimeClock.zip](TimeClock.zip)
+[Download latest stable build TimeClockFX.zip (file-upload.net page)](http://www.file-upload.net/download-8497539/TimeClockFX.zip.html)
 
 ## Timeline
 - 08.01.16
