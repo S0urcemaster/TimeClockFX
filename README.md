@@ -2,7 +2,7 @@
 
 A simple time clock app with scalaFX.
 
-![Screenshot](https://github.com/snhub/TimeClockFX/blob/master/screenshot.png)
+![Screenshot](snhub.github.com/TimeClockFX/screenshot.png)
 
 Features:
 - Tracks come/go in monthly file
