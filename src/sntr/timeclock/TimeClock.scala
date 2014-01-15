@@ -212,7 +212,6 @@ object TimeClock extends JFXApp {
 		id match {
 
 			case "come" => {
-				"hello" + " world"
 				val ds = new DataSet { come = DateTime.now; go = None }
 				data = ds :: data
 				serialize(data)

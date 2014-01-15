@@ -8,6 +8,10 @@ Features:
 
 [Download latest stable build TimeClockFX.zip (file-upload.net page)](http://www.file-upload.net/download-8497539/TimeClockFX.zip.html)
 
+Buglist Todo
+- Wrong preset time in forgotCome (07:50 as it is 02:17) => last entry as preset time ok or actual time better?
+- ForgotCome possibly bugged: ok and return don't invoke action
+
 ## Timeline
 - 09.01.14
 	- Cosmetics
@@ -59,6 +63,7 @@ Features:
 	- Single-/ double Button design
 	- Different styles
 - Better dialog
+- Record/Stats
 
 ## Requirements Specification
 
