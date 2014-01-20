@@ -8,13 +8,17 @@ Features:
 - Tracks come/go in monthly file
 - Displays times per month
 
-[Download latest stable build TimeClockFX.zip (file-upload.net page)](http://www.file-upload.net/download-8497539/TimeClockFX.zip.html)
+[Download TimeClockFX.zip (file-upload.net page)](http://www.file-upload.net/download-8497539/TimeClockFX.zip.html)
+(will not update until request)
 
 Buglist Todo
 - Wrong preset time in forgotCome (07:50 as it is 02:17) => last entry as preset time ok or actual time better?
 - ForgotCome possibly bugged: ok and return don't invoke action
 
 ## Timeline
+- 20.01.14
+	- month change while running fixed
+	
 - 09.01.14
 	- Cosmetics
 	
