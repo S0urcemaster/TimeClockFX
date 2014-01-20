@@ -167,15 +167,20 @@ object TimeClock extends JFXApp {
 		val pw = new java.io.PrintWriter(new java.io.File(p))
 		try pw.write(s) finally pw.close()
 	}
-
-	def serialize(list: List[DataSet]) {
-
-		val fw = new FileWriter(generateFilename, false)
+	
+	def serialize2File(list:List[DataSet], filename:String) {
+		
+		val fw = new FileWriter(filename, false)
 		try {
 			list.foreach(dataSet => {
 				fw.write(dataSet2Line(dataSet) + "\n")
 			})
 		} finally fw.close()
+	}
+
+	def serialize(list: List[DataSet]) {
+
+		serialize2File(list, generateFilename)
 
 	}
 
@@ -206,7 +211,7 @@ object TimeClock extends JFXApp {
 	def isForgotGo: Boolean = data(0).go.isEmpty
 
 	def isMonthChange(dtBefore:DateTime, dtAfter:DateTime): Boolean = {
-		dtBefore.plusDays(1).monthOfYear == dtAfter.monthOfYear
+		dtBefore.plusDays(1).getMonthOfYear == dtAfter.getMonthOfYear
 	}
 	
 	def doCome(dt: DateTime) {
@@ -221,7 +226,8 @@ object TimeClock extends JFXApp {
 		
 		val ds = new DataSet { come = dt; go = None }
 		data = ds :: data
-		serialize(data)
+		//for testing changed from serialize(data) to this
+		serialize2File(data, filenameFor(dt.getMonthOfYear, dt.getYear))
 
 		dayPanes = makeDayPanes
 		dayPanesBox.content = dayPanes

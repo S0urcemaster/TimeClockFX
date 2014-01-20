@@ -24,8 +24,7 @@ object TimingTest extends App {
 	 */
 	def testMonthChange {
 		
-		GenerateData.empty
-		assert(new File(TimeClock.filenameFor(1, 2014)).exists)
+		GenerateData.deleteTimesFiles
 		
 		val lastMonthCome = shortFormat.parseDateTime("31.01.14 23:00")
 		val newMonthGo = shortFormat.parseDateTime("01.02.14 01:00")
@@ -42,8 +41,14 @@ object TimingTest extends App {
 		Platform.runLater(new Runnable {
 			def run {
 				TimeClock.doCome(lastMonthCome)
+				assert(new File(TimeClock.filenameFor(1, 2014)).exists)
 				TimeClock.doGo(newMonthGo)
 				assert(!new File(TimeClock.filenameFor(2, 2014)).exists)
+			}
+		})
+		Thread.sleep(2000)
+		Platform.runLater(new Runnable {
+			def run {
 				TimeClock.doCome(newMonthCome)
 				assert(new File(TimeClock.filenameFor(2, 2014)).exists)
 			}
