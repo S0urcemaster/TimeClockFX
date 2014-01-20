@@ -3,11 +3,29 @@ package sntr.timeclock
 import java.text.SimpleDateFormat
 import java.util.Date
 import org.joda.time.format.DateTimeFormat
+import java.io.File
+import java.io.FilenameFilter
 
 object GenerateData {
 
-	def main(args: Array[String]): Unit = {
+	def deleteTimesFiles {
+		for (file <- new File(".").listFiles(new FilenameFilter() {
+			def accept(dir:File, filename:String):Boolean = {
+				filename.endsWith(".times")
+			}
+		})) file.delete
+			
+	}
+	
+	def empty {
 		
+		val list = List()
+		
+		TimeClock.serialize(list)
+		
+	}
+	
+	def fill {
 		val dtf = DateTimeFormat.forPattern("dd.MM.yy HH:mm")
 		
 		val list = List(
@@ -30,6 +48,12 @@ object GenerateData {
 				)
 				
 		TimeClock.serialize(list)
+
+	}
+	
+	def main(args: Array[String]): Unit = {
+		
+		fill
 		
 	}
 

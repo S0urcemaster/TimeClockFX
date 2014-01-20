@@ -80,10 +80,6 @@ object TimeClock extends JFXApp {
 
 	var monthlyDuration = Duration.ZERO
 
-	val WeekDays = List(
-
-		"", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
-
 	val forgotTextField = new TextField {
 		text = "hh:mm"
 		onKeyPressed = { e: KeyEvent =>
@@ -125,12 +121,14 @@ object TimeClock extends JFXApp {
 	def getCurrentMonth: Int = {
 		DateTime.now.getMonthOfYear
 	}
+	
+	def filenameFor(month:Int, year:Int): String = {
+		year.toString + String.format("%02d", Int.box(month)) + ".times"
+	}
 
 	def generateFilename(): String = {
 
-		val year = getCurrentYear.toString
-		val month = getCurrentMonth
-		year + String.format("%02d", Int.box(month)) + ".times"
+		filenameFor(getCurrentMonth, getCurrentYear)
 
 	}
 
@@ -207,28 +205,49 @@ object TimeClock extends JFXApp {
 
 	def isForgotGo: Boolean = data(0).go.isEmpty
 
+	def isMonthChange(dtBefore:DateTime, dtAfter:DateTime): Boolean = {
+		dtBefore.plusDays(1).monthOfYear == dtAfter.monthOfYear
+	}
+	
+	def doCome(dt: DateTime) {
+		
+		if(!data.isEmpty) {
+			val lastCome = data(0).come
+		
+			if(isMonthChange(lastCome, dt)) {
+				data = List[DataSet]()
+			}
+		}
+		
+		val ds = new DataSet { come = dt; go = None }
+		data = ds :: data
+		serialize(data)
+
+		dayPanes = makeDayPanes
+		dayPanesBox.content = dayPanes
+		toggleButtons
+		adjustTitle
+	}
+	
+	def doGo(dt:DateTime) {
+		data(0).go = Some(dt)
+		serialize(data)
+		dayPanes = makeDayPanes
+		dayPanesBox.content = dayPanes
+		toggleButtons
+		adjustTitle
+	}
+	
 	def clicked(id: String) {
 
 		id match {
 
 			case "come" => {
-				val ds = new DataSet { come = DateTime.now; go = None }
-				data = ds :: data
-				serialize(data)
-
-				dayPanes = makeDayPanes
-				dayPanesBox.content = dayPanes
-				toggleButtons
-				adjustTitle
+				doCome(DateTime.now)
 
 			}
 			case "go" => {
-				data(0).go = Some(DateTime.now)
-				serialize(data)
-				dayPanes = makeDayPanes
-				dayPanesBox.content = dayPanes
-				toggleButtons
-				adjustTitle
+				doGo(DateTime.now)
 			}
 			case "forgotCome" => {
 				forgotLabel.text = "Type in date and time:"
